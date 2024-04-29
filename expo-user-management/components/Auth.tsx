@@ -15,7 +15,7 @@ AppState.addEventListener('change', (state) => {
   }
 })
 
-export default function SignInScreen() {
+export default function Auth() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)

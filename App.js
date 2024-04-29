@@ -5,10 +5,29 @@ import BudgetList from "./Screens/BudgetList";
 import DormJobsList from "./Screens/DormJobsList";
 import MessageScreen from "./Screens/MessageScreen";
 import SignInScreen from "./Screens/SignInScreen";
+import "react-native-url-polyfill/auto"
+import { useState, useEffect } from "react"
+import { supabase } from "./lib/supabase"
+import Auth from "./Screens/SignInScreen"
+import Account from "./Components/Account"
+import { View } from "react-native"
+
+
 
 const Stack = createNativeStackNavigator()
 
 export default function App() {
+  const [session, setSession] = useState(null)
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
+    })
+
+    supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session)
+    })
+  }, [])
   return(
     <NavigationContainer>
       <Stack.Navigator initialRouteName="Home">

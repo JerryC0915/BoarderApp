@@ -1,8 +1,6 @@
-import {View, Text, ScrollView, TouchableOpacity, StyleSheet, Image} from "react-native";
-
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image } from "react-native";
 export default function BudgetList() {
-    return(
-    <View style={styles.container}>
+    return (<View style={styles.container}>
         <View style={styles.header}>
             <Text style={styles.TotalBudget}>Total Budget: </Text>
             <TouchableOpacity onPress={console.log("Edit Budget")} style={styles.button}>
@@ -14,15 +12,13 @@ export default function BudgetList() {
                 $: --------
             </Text>
         </View>
-    </View>
-    );
+    </View>);
 }
-
 const styles = StyleSheet.create({
     TotalBudget: {
         fontSize: 20,
         fontWeight: 'bold',
-        marginTop:20,
+        marginTop: 20,
         marginLeft: 10,
     },
     header: {
