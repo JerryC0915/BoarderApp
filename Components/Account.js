@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { supabase } from "../lib/supabase"
+import { supabase } from "../lib/supabase.js"
 import { StyleSheet, View, Alert } from "react-native"
 import { Button, Input } from "react-native-elements"
 

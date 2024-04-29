@@ -7,9 +7,7 @@ import MessageScreen from "./Screens/MessageScreen";
 import SignInScreen from "./Screens/SignInScreen";
 import "react-native-url-polyfill/auto"
 import { useState, useEffect } from "react"
-import { supabase } from "./lib/supabase"
-import Auth from "./Screens/SignInScreen"
-import Account from "./Components/Account"
+import { supabase } from "./lib/supabase.js"
 import { View } from "react-native"
 
 
@@ -30,13 +28,13 @@ export default function App() {
   }, [])
   return(
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="Home">
-        <Stack.Screen name = "Home" component = {HomeScreen}/>
+      <Stack.Navigator initialRouteName="HomeScreen">
+        <Stack.Screen name = "HomeScreen" component = {HomeScreen}/>
         <Stack.Screen name = "BudgetList" component = {BudgetList}/>
         <Stack.Screen name = "DormJobsList" component = {DormJobsList}/>
         <Stack.Screen name = "MessageScreen" component = {MessageScreen}/>
         <Stack.Screen name = "SignInScreen" component = {SignInScreen}/>
       </Stack.Navigator>
-    </NavigationContainer>
+    </NavigationContainer> 
   )
 }

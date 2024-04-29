@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Alert, StyleSheet, View, AppState } from 'react-native'
-import { supabase } from '../lib/supabase'
+import { supabase } from '../lib/supabase.js'
 import { Button, Input } from 'react-native-elements'
 
 // Tells Supabase Auth to continuously refresh the session automatically if
@@ -40,10 +40,6 @@ export default function SignInScreen() {
       email: email,
       password: password,
     })
-
-    if (error) Alert.alert(error.message)
-    if (!session) Alert.alert('Please check your inbox for email verification!')
-    setLoading(false)
   }
 
   return (
