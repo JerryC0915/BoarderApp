@@ -9,6 +9,7 @@ import {
     Modal,
     Button
   } from 'react-native';
+  import { supabase } from "../lib/supabase.js"
 
 const BudgetList = ({ id, name, amount, onAmountChange, onDelete}) => {
   return (
@@ -102,12 +103,24 @@ const App = () => {
   const [itemId, setItemId] = useState(0);
   const [addItemModalVisible, setAddItemModalVisible] = useState(false);
 
-  const handleAmountChange = (id) => {
+  const handleAmountChange = async (id, amount) => {
     const newItems = items.map((item) =>
-      item.id === id ? { ...item, amount: amount } : item
+      item.id === id ? { ...item, amount: parseFloat(amount) } : item
     );
     setItems(newItems);
+
+    const { error } = await supabase
+      .from('budget_items')
+      .update({ amount: parseFloat(amount) })
+      .match({ id });
+  
+    if (error) {
+      console.error('Error updating data in Supabase:', error);
+    } else {
+      console.log('Data updated in Supabase');
+    }
   };
+  
 
   const calculateRemainingBudget = () => {
     const totalSpent = items.reduce((acc, item) => acc + item.amount, 0);
@@ -120,16 +133,40 @@ const App = () => {
     setModalVisible(false);
   };
 
-  const handleAddItemSubmit = (item) => {
-    setItems([...items, { id: itemId, ...item }]);
+  const handleAddItemSubmit = async (item) => {
+    const newItem = { id: itemId, ...item };
+    setItems([...items, newItem]);
     setItemId(itemId + 1);
     setAddItemModalVisible(false);
+  
+    const { data, error } = await supabase
+      .from('budget_items')
+      .insert([newItem]);
+  
+    if (error) {
+      console.error('Error uploading data to Supabase:', error);
+    } else {
+      console.log('Data uploaded to Supabase:', data);
+    }
   };
+  
 
-  const handleDeleteItem = (id) => {
+  const handleDeleteItem = async (id) => {
     const newItems = items.filter((item) => item.id !== id);
     setItems(newItems);
+  
+    const { error } = await supabase
+      .from('budget_items')
+      .delete()
+      .match({ id });
+  
+    if (error) {
+      console.error('Error deleting data from Supabase:', error);
+    } else {
+      console.log('Data deleted from Supabase');
+    }
   };
+  
 
   return (
     <View style={styles.container}>
