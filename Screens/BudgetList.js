@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -8,64 +8,65 @@ import {
     TextInput,
     Modal,
     Button
-  } from 'react-native';
-  import { supabase } from "../lib/supabase.js"
+} from 'react-native';
+import { supabase } from "../lib/supabase.js"
 
-const BudgetList = ({ id, name, amount, onAmountChange, onDelete}) => {
-  return (
-    <View style={styles.budgetList}>
-      <Text>{name}</Text>
-      <TextInput
-        style={styles.input}
-        keyboardType="numeric"
-        value={amount.toString()}
-        onChangeText={(value) => onAmountChange(id, value)}
-      />
-      <TouchableOpacity onPress={() => onDelete(id)} style={styles.deleteButton}>
-        <Text>Delete</Text>
-      </TouchableOpacity>
-    </View>
-  );
+const BudgetList = ({ id, name, amount, onAmountChange, onDelete }) => {
+    return (
+        <View style={styles.budgetList}>
+            <Text>{name}</Text>
+            <TextInput
+                style={styles.input}
+                keyboardType="numeric"
+                value={amount.toString()}
+                onChangeText={(value) => onAmountChange(id, parseFloat(value))}
+            />
+            <TouchableOpacity onPress={() => onDelete(id)} style={styles.deleteButton}>
+                <Text>Delete</Text>
+            </TouchableOpacity>
+        </View>
+    );
 };
 
 const AddItemModal = ({ visible, onClose, onSubmit }) => {
     const [name, setName] = useState('');
     const [amount, setAmount] = useState('');
-  
+
     const handleSubmit = () => {
-      if (name.trim() && amount) {
-        onSubmit({ name, amount: parseFloat(amount)});
-        setName('');
-        setAmount('');
-      }
+        if (name.trim() && amount) {
+            onSubmit({ name, amount: parseFloat(amount) });
+            setName('');
+            setAmount('');
+        }
     };
+
     return (
         <Modal
-          animationType="slide"
-          transparent={true}
-          visible={visible}
-          onRequestClose={onClose}>
-          <View style={styles.centeredView}>
-            <View style={styles.modalView}>
-              <TextInput
-                placeholder="Item name"
-                style={styles.modalInput}
-                value={name}
-                onChangeText={setName}
-              />
-              <TextInput
-                placeholder="Cost"
-                style={styles.modalInput}
-                keyboardType="numeric"
-                value={amount}
-                onChangeText={setAmount}
-              />
-              <Button title="Add" onPress={handleSubmit} />
-              <Button title="Cancel" onPress={onClose} />
+            animationType="slide"
+            transparent={true}
+            visible={visible}
+            onRequestClose={onClose}>
+            <View style={styles.centeredView}>
+                <View style={styles.modalView}>
+                    <TextInput
+                        placeholder="Item name"
+                        style={styles.modalInput}
+                        value={name}
+                        onChangeText={setName}
+                    />
+                    <TextInput
+                        placeholder="Cost"
+                        style={styles.modalInput}
+                        keyboardType="numeric"
+                        value={amount}
+                        onChangeText={setAmount}
+                    />
+                    <Button title="Add" onPress={handleSubmit} />
+                    <Button title="Cancel" onPress={onClose} />
+                </View>
             </View>
-          </View>
         </Modal>
-      );
+    );
 };
 
 const EditBudgetModal = ({ visible, onClose, onSubmit, initialBudget }) => {
@@ -73,139 +74,143 @@ const EditBudgetModal = ({ visible, onClose, onSubmit, initialBudget }) => {
 
     return (
         <Modal
-          animationType="slide"
-          transparent={true}
-          visible={visible}
-          onRequestClose={onClose}>
-          <View style={styles.centeredView}>
-            <View style={styles.modalView}>
-              <Text style={styles.modalText}>Edit Total Budget:</Text>
-              <TextInput
-                style={styles.modalInput}
-                value={budgetInput}
-                keyboardType="numeric"
-                onChangeText={setBudgetInput}
-              />
-              <Button
-                title="Submit"
-                onPress={() => onSubmit(parseFloat(budgetInput) || 0)}
-              />
-              <Button title="Cancel" onPress={onClose} />
+            animationType="slide"
+            transparent={true}
+            visible={visible}
+            onRequestClose={onClose}>
+            <View style={styles.centeredView}>
+                <View style={styles.modalView}>
+                    <Text style={styles.modalText}>Edit Total Budget:</Text>
+                    <TextInput
+                        style={styles.modalInput}
+                        value={budgetInput}
+                        keyboardType="numeric"
+                        onChangeText={setBudgetInput}
+                    />
+                    <Button
+                        title="Submit"
+                        onPress={() => onSubmit(parseFloat(budgetInput) || 0)}
+                    />
+                    <Button title="Cancel" onPress={onClose} />
+                </View>
             </View>
-          </View>
         </Modal>
     );
 };
 
 const App = () => {
-  const [totalBudget, setTotalBudget] = useState(1000);
-  const [items, setItems] = useState([]);
-  const [itemId, setItemId] = useState(0);
-  const [addItemModalVisible, setAddItemModalVisible] = useState(false);
+    const [totalBudget, setTotalBudget] = useState(1000);
+    const [items, setItems] = useState([]);
+    const [itemId, setItemId] = useState(0);
+    const [addItemModalVisible, setAddItemModalVisible] = useState(false);
+    const [modalVisible, setModalVisible] = useState(false);
 
-  const handleAmountChange = async (id, amount) => {
-    const newItems = items.map((item) =>
-      item.id === id ? { ...item, amount: parseFloat(amount) } : item
-    );
-    setItems(newItems);
+    useEffect(() => {
+        const fetchItems = async () => {
+            const { data, error } = await supabase.from('budget_items').select('*');
+            if (error) {
+                console.error('Error fetching data:', error);
+            } else {
+                setItems(data);
+                if (data.length > 0) {
+                    setItemId(Math.max(...data.map(item => item.id)) + 1);
+                }
+            }
+        };
+        fetchItems();
+    }, []);
 
-    const { error } = await supabase
-      .from('budget_items')
-      .update({ amount: parseFloat(amount) })
-      .match({ id });
-  
-    if (error) {
-      console.error('Error updating data in Supabase:', error);
-    } else {
-      console.log('Data updated in Supabase');
-    }
-  };
-  
+    const handleAmountChange = async (id, amount) => {
+        const newItems = items.map((item) =>
+            item.id === id ? { ...item, amount: amount } : item
+        );
+        setItems(newItems);
 
-  const calculateRemainingBudget = () => {
-    const totalSpent = items.reduce((acc, item) => acc + item.amount, 0);
-    return totalBudget - totalSpent;
-  };
-  const [modalVisible, setModalVisible] = useState(false);
+        const { error } = await supabase
+            .from('budget_items')
+            .update({ amount: amount })
+            .match({ id });
 
-  const handleEditBudgetSubmit = (newBudget) => {
-    setTotalBudget(newBudget);
-    setModalVisible(false);
-  };
+        if (error) {
+            console.error('Error updating data in Supabase:', error);
+        }
+    };
 
-  const handleAddItemSubmit = async (item) => {
-    const newItem = { id: itemId, ...item };
-    setItems([...items, newItem]);
-    setItemId(itemId + 1);
-    setAddItemModalVisible(false);
-  
-    const { data, error } = await supabase
-      .from('budget_items')
-      .insert([newItem]);
-  
-    if (error) {
-      console.error('Error uploading data to Supabase:', error);
-    } else {
-      console.log('Data uploaded to Supabase:', data);
-    }
-  };
-  
+    const handleAddItemSubmit = async (item) => {
+        const newItem = { id: itemId, ...item };
+        setItems([...items, newItem]);
+        setItemId(itemId + 1);
 
-  const handleDeleteItem = async (id) => {
-    const newItems = items.filter((item) => item.id !== id);
-    setItems(newItems);
-  
-    const { error } = await supabase
-      .from('budget_items')
-      .delete()
-      .match({ id });
-  
-    if (error) {
-      console.error('Error deleting data from Supabase:', error);
-    } else {
-      console.log('Data deleted from Supabase');
-    }
-  };
-  
+        const { data, error } = await supabase
+            .from('budget_items')
+            .insert([newItem]);
 
-  return (
-    <View style={styles.container}>
-        <View style={styles.budgetInfo}>
-            <Text style={styles.budgetText}>Total Budget:</Text>
-            <Text style={styles.budgetAmount}>${totalBudget.toFixed(2)}</Text>
-            <TouchableOpacity onPress={() => setModalVisible(true)} style={styles.editButton}>
-                <Text>Edit Budget</Text>
+        if (error) {
+            console.error('Error uploading data to Supabase:', error);
+        }
+    };
+
+    const handleDeleteItem = async (id) => {
+        const newItems = items.filter(item => item.id !== id);
+        setItems(newItems);
+
+        const { error } = await supabase
+            .from('budget_items')
+            .delete()
+            .match({ id });
+
+        if (error) {
+            console.error('Error deleting data from Supabase:', error);
+        }
+    };
+
+    const handleEditBudgetSubmit = (newBudget) => {
+        setTotalBudget(newBudget);
+        setModalVisible(false);
+    };
+
+    const calculateRemainingBudget = () => {
+        const totalSpent = items.reduce((acc, item) => acc + item.amount, 0);
+        return totalBudget - totalSpent;
+    };
+
+    return (
+        <View style={styles.container}>
+            <View style={styles.budgetInfo}>
+                <Text style={styles.budgetText}>Total Budget: ${totalBudget.toFixed(2)}</Text>
+                <TouchableOpacity onPress={() => setModalVisible(true)} style={styles.editButton}>
+                    <Text>Edit Budget</Text>
+                </TouchableOpacity>
+            </View>
+            <Text style={styles.budgetText}>Remaining Budget: ${calculateRemainingBudget().toFixed(2)}</Text>
+            <ScrollView style={styles.scrollView}>
+                {items.map((item) => (
+                    <BudgetList
+                        key={item.id}
+                        id={item.id}
+                        name={item.name}
+                        amount={item.amount}
+                        onAmountChange={handleAmountChange}
+                        onDelete={handleDeleteItem}
+                    />
+                ))}
+            </ScrollView>
+            <TouchableOpacity onPress={() => setAddItemModalVisible(true)} style={styles.addButton}>
+                <Text>Add More Items</Text>
             </TouchableOpacity>
-        </View>
-        <Text style={styles.budgetText}>Remaining Budget: ${calculateRemainingBudget().toFixed(2)}</Text>
-        <ScrollView style={styles.scrollView}>
-            {items.map((item) => (
-            <BudgetList
-              key={item.id}
-              id={item.id}
-              name={item.name}
-              amount={item.amount}
-              onAmountChange={handleAmountChange}
-              onDelete = {handleDeleteItem}
+            <AddItemModal
+                visible={addItemModalVisible}
+                onClose={() => setAddItemModalVisible(false)}
+                onSubmit={handleAddItemSubmit}
             />
-            ))}
-        </ScrollView>
-        <TouchableOpacity onPress={() => setAddItemModalVisible(true)} style={styles.addButton}>
-            <Text>Add More Items</Text>
-        </TouchableOpacity>
-        <AddItemModal
-            visible={addItemModalVisible}
-            onClose={() => setAddItemModalVisible(false)}
-            onSubmit={handleAddItemSubmit}
-        />
-        <EditBudgetModal
-            visible={modalVisible}
-            onClose={() => setModalVisible(false)}
-            onSubmit={handleEditBudgetSubmit}
-            initialBudget={totalBudget}
-        />
-    </View>
-  );
+            <EditBudgetModal
+                visible={modalVisible}
+                onClose={() => setModalVisible(false)}
+                onSubmit={handleEditBudgetSubmit}
+                initialBudget={totalBudget}
+            />
+        </View>
+    );
 };
 
 const styles = StyleSheet.create({

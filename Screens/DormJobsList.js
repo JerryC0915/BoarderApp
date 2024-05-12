@@ -1,14 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Modal, TextInput, Button } from 'react-native';
+import { supabase } from '../lib/supabase';
 
-const DormJob = ({ name, assignedTo,onDelete }) => {
+const DormJob = ({ id, name, assignedTo, onDelete }) => {
   return (
     <View style={styles.jobItem}>
-      <View style={styles.jobDetails}>
-        <Text style={styles.jobName}>{name}</Text>
-        <Text style={styles.jobAssignedTo}>Assigned to: {assignedTo}</Text>
-      </View>
-      <TouchableOpacity onPress={onDelete} style={styles.deleteButton}>
+      <Text style={styles.jobName}>{name}</Text>
+      <Text style={styles.jobAssignedTo}>Assigned to: {assignedTo}</Text>
+      <TouchableOpacity onPress={() => onDelete(id)} style={styles.deleteButton}>
         <Text>Delete</Text>
       </TouchableOpacity>
     </View>
@@ -16,18 +15,17 @@ const DormJob = ({ name, assignedTo,onDelete }) => {
 };
 
 const AddJobModal = ({ visible, onClose, onSubmit }) => {
-    const [jobName, setJobName] = useState('');
-    const [assignedTo, setAssignedTo] = useState('');
-  
-    const handleAddJob = () => {
-      if (jobName.trim() && assignedTo.trim()) {
-        onSubmit({ name: jobName, assignedTo });
-        setJobName('');
-        setAssignedTo('');
-        onClose(); 
-      }
-    };
-  
+  const [jobName, setJobName] = useState('');
+  const [assignedTo, setAssignedTo] = useState('');
+
+  const handleAddJob = () => {
+    if (jobName.trim() && assignedTo.trim()) {
+      onSubmit({ name: jobName, assignedTo });
+      setJobName('');
+      setAssignedTo('');
+    }
+    onClose();
+  };
 
   return (
     <Modal animationType="slide" transparent={true} visible={visible} onRequestClose={onClose}>
@@ -48,7 +46,7 @@ const AddJobModal = ({ visible, onClose, onSubmit }) => {
           <Button title="Add Job" onPress={handleAddJob} />
           <Button title="Cancel" onPress={onClose} />
         </View>
-    </View>
+      </View>
     </Modal>
   );
 };
@@ -57,40 +55,67 @@ const DormJobsScreen = () => {
   const [dormJobs, setDormJobs] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
 
-  const handleAddJobSubmit = (jobName) => {
-    setDormJobs([...dormJobs, jobName]);
+  useEffect(() => {
+    let isActive = true;  // Flag to check if component is mounted
+    const fetchJobs = async () => {
+      const { data, error } = await supabase.from('dorm_jobs').select('*');
+      if (error) console.error('Error fetching dorm jobs:', error);
+      else if (isActive) setDormJobs(data.map(job => ({ id: job.id, name: job.name, assignedTo: job.AssignedTo })));
+    };
+
+    fetchJobs();
+
+    return () => {
+      isActive = false;  // Set flag to false on cleanup
+    };
+  }, []);
+
+  const handleAddJobSubmit = async (job) => {
+    const { data, error } = await supabase.from('dorm_jobs').insert([{ name: job.name, AssignedTo: job.assignedTo }]);
+    if (error) {
+      console.error('Error adding dorm job:', error);
+    } else {
+      const newJob = { id: data[0].id, name: data[0].name, assignedTo: data[0].AssignedTo };
+      setDormJobs(currentJobs => [...currentJobs, newJob]); 
+    }
   };
 
-  const handleDeleteJob = (index) => {
-    setDormJobs(dormJobs.filter((_, idx) => idx !== index));
+  const handleDeleteJob = async (id) => {
+    const { error } = await supabase.from('dorm_jobs').delete().match({ id });
+    if (error) console.error('Error deleting dorm job:', error);
+    else setDormJobs(currentJobs => currentJobs.filter(job => job.id !== id)); 
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Dorm Jobs</Text>
       <ScrollView style={styles.scrollView}>
-        {dormJobs.map((job, index) => (
+        {dormJobs.map(job => (
           <DormJob
-            key={index}
+            key={job.id}
+            id={job.id}
             name={job.name}
             assignedTo={job.assignedTo}
-            onDelete={() => handleDeleteJob(index)}
+            onDelete={() => handleDeleteJob(job.id)}
           />
         ))}
       </ScrollView>
       <TouchableOpacity onPress={() => setModalVisible(true)} style={styles.addButton}>
         <Text style={styles.addButtonText}>+</Text>
       </TouchableOpacity>
-
-      <AddJobModal visible={modalVisible} onClose={() => setModalVisible(false)} onSubmit={handleAddJobSubmit} />
+      <AddJobModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        onSubmit={handleAddJobSubmit}
+      />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        padding: 20,
+  container: {
+    flex: 1,
+    padding: 20,
   },
   title: {
     fontSize: 24,
@@ -127,9 +152,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-    addButtonText: {
-        fontSize: 24,
-        fontWeight: 'bold',
+  addButtonText: {
+    fontSize: 24,
+    fontWeight: 'bold',
     padding: 10,
     width: 60,
     height: 60,
@@ -153,7 +178,7 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 2
+      height: 2,
     },
     shadowOpacity: 0.25,
     shadowRadius: 4,
@@ -167,8 +192,8 @@ const styles = StyleSheet.create({
     width: '100%',
     marginBottom: 10,
     padding: 20,
-    paddingRight:75,
-    },
+    paddingRight: 75,
+  },
 });
 
 export default DormJobsScreen;

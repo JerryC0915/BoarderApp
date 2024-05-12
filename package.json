@@ -14,7 +14,7 @@
     "@supabase/supabase-js": "^2.42.7",
     "@types/react": "~18.2.45",
     "base64-arraybuffer": "^1.0.2",
-    "expo": "~50.0.14",
+    "expo": "^51.0.2",
     "expo-file-system": "~16.0.9",
     "expo-image-picker": "~14.7.1",
     "expo-status-bar": "~1.11.1",
