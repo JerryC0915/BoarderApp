@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { supabase } from "../lib/supabase.js"
 
-const HomeScreen = ({navigation}) => {
+const HomeScreen = ({ navigation }) => {
   const handleBudgetPress = () => {
     navigation.navigate("BudgetList");
   };
@@ -10,13 +11,21 @@ const HomeScreen = ({navigation}) => {
     navigation.navigate("DormJobsList");
   };
 
-  const handleMessagePress = () => {
-    navigation.navigate("MessageScreen");
+  const handleDutyPersonPress = () => {
+    navigation.navigate("DutyPerson");
   };
 
-  const handleSignOutPress = () => {
-    navigation.navigate("SignInScreen");
-  }
+  const handleSignOutPress = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (!error) {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "SignInScreen" }],
+      });
+    } else {
+      console.error('Sign out error: ', error.message);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -25,33 +34,33 @@ const HomeScreen = ({navigation}) => {
           source={{ uri: 'https://cnas.ucr.edu/sites/default/files/styles/form_preview/public/default-profile.jpg?itok=UCHDPglp' }}
           style={styles.profilePic}
         />
-        <Text style={styles.name}>Duty Person: </Text>
+        <Text style={styles.name}>Duty Person:</Text>
         <View>
-            <TouchableOpacity onPress={handleSignOutPress} style={styles.button}>
-                <Text>Sign Out</Text>
-            </TouchableOpacity>
+          <TouchableOpacity onPress={handleSignOutPress} style={styles.button}>
+            <Text>Sign Out</Text>
+          </TouchableOpacity>
         </View>
       </View>
       <ScrollView style={styles.scrollView}>
         <TouchableOpacity onPress={handleBudgetPress} style={styles.buttonSection}>
           <Text style={styles.sectionTitle}>Budget List:</Text>
           <Image
-            source = {{uri: 'https://cdn-icons-png.flaticon.com/512/4604/4604286.png'}}
-            style = {styles.ButtonPic}
+            source={{ uri: 'https://cdn-icons-png.flaticon.com/512/4604/4604286.png' }}
+            style={styles.ButtonPic}
           />
         </TouchableOpacity>
         <TouchableOpacity onPress={handleDormJobsPress} style={styles.buttonSection}>
           <Text style={styles.sectionTitle}>Dorm Jobs List:</Text>
           <Image
-            source = {{uri: 'https://cdn-icons-png.flaticon.com/512/5027/5027336.png'}}
-            style = {styles.ButtonPic}
+            source={{ uri: 'https://cdn-icons-png.flaticon.com/512/5027/5027336.png' }}
+            style={styles.ButtonPic}
           />
         </TouchableOpacity>
-        <TouchableOpacity onPress={handleMessagePress} style={styles.buttonSection}>
-          <Text style={styles.sectionTitle}>Message:</Text>
+        <TouchableOpacity onPress={handleDutyPersonPress} style={styles.buttonSection}>
+          <Text style={styles.sectionTitle}>DutyPerson:</Text>
           <Image
-            source = {{uri: 'https://images.vexels.com/media/users/3/136808/isolated/preview/d3455a22af5f3ed7565fb5fb71bb8d43-send-message-icon.png'}}
-            style = {styles.ButtonPic}
+            source={{ uri: 'https://images.vexels.com/media/users/3/136808/isolated/preview/d3455a22af5f3ed7565fb5fb71bb8d43-send-message-icon.png' }}
+            style={styles.ButtonPic}
           />
         </TouchableOpacity>
       </ScrollView>
@@ -81,7 +90,7 @@ const styles = StyleSheet.create({
     width: 70,
     height: 70,
     borderRadius: 25,
-    marginTop:10,
+    marginTop: 10,
     marginLeft: 10,
   },
   name: {
@@ -112,4 +121,5 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 });
+
 export default HomeScreen;

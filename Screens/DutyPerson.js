@@ -1,10 +1,10 @@
 import {View, Text, StyleSheet} from "react-native";
 
-export default function MessageScreen() {
+export default function DutyPersonScreen() {
     return(
         <View style = {styles.container}>
             <Text style = {styles.text}>
-                Message Screen
+                Duty Person Screen
             </Text>
         </View>
     );

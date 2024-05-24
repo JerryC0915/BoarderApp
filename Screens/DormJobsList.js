@@ -1,15 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Modal, TextInput, Button } from 'react-native';
-import { supabase } from '../lib/supabase';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+  TextInput,
+  Modal,
+  Button
+} from 'react-native';
+import { supabase } from "../lib/supabase.js"
 
-const DormJob = ({ id, name, assignedTo, onDelete }) => {
+const DormJob = ({ id, name, assignedTo, onDelete, userRole }) => {
   return (
     <View style={styles.jobItem}>
       <Text style={styles.jobName}>{name}</Text>
       <Text style={styles.jobAssignedTo}>Assigned to: {assignedTo}</Text>
-      <TouchableOpacity onPress={() => onDelete(id)} style={styles.deleteButton}>
-        <Text>Delete</Text>
-      </TouchableOpacity>
+      {userRole === 'admin' && (
+        <TouchableOpacity onPress={() => onDelete(id)} style={styles.deleteButton}>
+          <Text>Delete</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 };
@@ -54,55 +65,96 @@ const AddJobModal = ({ visible, onClose, onSubmit }) => {
 const DormJobsScreen = () => {
   const [dormJobs, setDormJobs] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
+  const [userRole, setUserRole] = useState('');
 
   useEffect(() => {
-    let isActive = true;  // Flag to check if component is mounted
     const fetchJobs = async () => {
       const { data, error } = await supabase.from('dorm_jobs').select('*');
-      if (error) console.error('Error fetching dorm jobs:', error);
-      else if (isActive) setDormJobs(data.map(job => ({ id: job.id, name: job.name, assignedTo: job.AssignedTo })));
+      if (error) {
+        console.error('Error fetching dorm jobs:', error);
+      } else {
+        setDormJobs(data);
+      }
+    };
+
+    const fetchUserRole = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+        if (error) {
+          console.error('Error fetching user role:', error);
+        } else {
+          setUserRole(data.role);
+        }
+      } else {
+        console.error('No user found.');
+      }
     };
 
     fetchJobs();
+    fetchUserRole();
+
+    const subscription = supabase
+      .channel('public:dorm_jobs')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'dorm_jobs' }, (payload) => {
+        fetchJobs();
+      })
+      .subscribe();
 
     return () => {
-      isActive = false;  // Set flag to false on cleanup
+      supabase.removeChannel(subscription);
     };
   }, []);
 
   const handleAddJobSubmit = async (job) => {
-    const { data, error } = await supabase.from('dorm_jobs').insert([{ name: job.name, AssignedTo: job.assignedTo }]);
+    const { data, error } = await supabase.from('dorm_jobs').insert([{ name: job.name, assignedTo: job.assignedTo }]);
     if (error) {
       console.error('Error adding dorm job:', error);
-    } else {
-      const newJob = { id: data[0].id, name: data[0].name, assignedTo: data[0].AssignedTo };
-      setDormJobs(currentJobs => [...currentJobs, newJob]); 
+    } else if (data && data.length > 0) {
+      const newJob = {
+        id: data[0].id,
+        name: data[0].name,
+        assignedTo: data[0].assignedTo
+      };
+      setDormJobs(currentJobs => [...currentJobs, newJob]);
     }
   };
 
   const handleDeleteJob = async (id) => {
-    const { error } = await supabase.from('dorm_jobs').delete().match({ id });
-    if (error) console.error('Error deleting dorm job:', error);
-    else setDormJobs(currentJobs => currentJobs.filter(job => job.id !== id)); 
+    console.log(`Attempting to delete dorm job with ID: ${id}`);
+    const { data, error } = await supabase.from('dorm_jobs').delete().eq('id', id);
+    if (error) {
+      console.error(`Error deleting dorm job with ID ${id}:`, error);
+    } else {
+      console.log(`Dorm job deleted from Supabase: ${id}`, data);
+      setDormJobs(currentJobs => currentJobs.filter(job => job.id !== id));
+    }
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Dorm Jobs</Text>
       <ScrollView style={styles.scrollView}>
-        {dormJobs.map(job => (
+        {dormJobs.map((job, index) => (
           <DormJob
-            key={job.id}
+            key={job.id || index}
             id={job.id}
             name={job.name}
             assignedTo={job.assignedTo}
-            onDelete={() => handleDeleteJob(job.id)}
+            onDelete={handleDeleteJob}
+            userRole={userRole}
           />
         ))}
       </ScrollView>
-      <TouchableOpacity onPress={() => setModalVisible(true)} style={styles.addButton}>
-        <Text style={styles.addButtonText}>+</Text>
-      </TouchableOpacity>
+      {userRole === 'admin' && (
+        <TouchableOpacity onPress={() => setModalVisible(true)} style={styles.addButton}>
+          <Text style={styles.addButtonText}>+</Text>
+        </TouchableOpacity>
+      )}
       <AddJobModal
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
