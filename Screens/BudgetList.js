@@ -1,18 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
-  TextInput,
-  Modal,
-  Button
-} from 'react-native';
-import { supabase } from "../lib/supabase.js"
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, Modal, Button } from 'react-native';
+import { supabase } from "../lib/supabase.js";
 
 const BudgetList = ({ id, name, amount, onAmountChange, onDelete, userRole }) => {
-  console.log("Rendering BudgetList:", { id, name, amount });
   return (
     <View style={styles.budgetList}>
       <Text>{name}</Text>
@@ -47,11 +37,7 @@ const AddItemModal = ({ visible, onClose, onSubmit }) => {
   };
 
   return (
-    <Modal
-      animationType="slide"
-      transparent={true}
-      visible={visible}
-      onRequestClose={onClose}>
+    <Modal animationType="slide" transparent={true} visible={visible} onRequestClose={onClose}>
       <View style={styles.centeredView}>
         <View style={styles.modalView}>
           <TextInput
@@ -79,11 +65,7 @@ const EditBudgetModal = ({ visible, onClose, onSubmit, initialBudget }) => {
   const [budgetInput, setBudgetInput] = useState(initialBudget.toString());
 
   return (
-    <Modal
-      animationType="slide"
-      transparent={true}
-      visible={visible}
-      onRequestClose={onClose}>
+    <Modal animationType="slide" transparent={true} visible={visible} onRequestClose={onClose}>
       <View style={styles.centeredView}>
         <View style={styles.modalView}>
           <Text style={styles.modalText}>Edit Total Budget:</Text>
@@ -93,10 +75,7 @@ const EditBudgetModal = ({ visible, onClose, onSubmit, initialBudget }) => {
             keyboardType="numeric"
             onChangeText={setBudgetInput}
           />
-          <Button
-            title="Submit"
-            onPress={() => onSubmit(parseFloat(budgetInput) || 0)}
-          />
+          <Button title="Submit" onPress={() => onSubmit(parseFloat(budgetInput) || 0)} />
           <Button title="Cancel" onPress={onClose} />
         </View>
       </View>
@@ -104,7 +83,8 @@ const EditBudgetModal = ({ visible, onClose, onSubmit, initialBudget }) => {
   );
 };
 
-const BudgetListScreen = () => {
+const BudgetListScreen = ({ route }) => {
+  const { dorm } = route.params;
   const [totalBudget, setTotalBudget] = useState(1000);
   const [items, setItems] = useState([]);
   const [itemId, setItemId] = useState(0);
@@ -114,17 +94,30 @@ const BudgetListScreen = () => {
 
   useEffect(() => {
     const fetchItems = async () => {
-      const { data, error } = await supabase.from('budget_items').select('*');
+      const { data, error } = await supabase.from('budget_items').select('*').eq('dorm', dorm);
       if (error) {
         console.error('Error fetching data:', error);
       } else {
-        console.log('Fetched budget items:', data);
-        setItems(data);
+        setItems(data || []);
         if (data.length > 0) {
           setItemId(Math.max(...data.map(item => item.id)) + 1);
         }
       }
     };
+
+    const fetchTotalBudget = async () => {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('total_budget')
+          .eq('dorm', dorm)
+          .single();
+        
+        if (error) {
+          console.error('Error fetching total budget:', error);
+        } else {
+          setTotalBudget(data?.total_budget || 1000);
+        }
+      };
 
     const fetchUserRole = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -137,7 +130,6 @@ const BudgetListScreen = () => {
         if (error) {
           console.error('Error fetching user role:', error);
         } else {
-          console.log('Fetched user role:', data.role);
           setUserRole(data.role);
         }
       } else {
@@ -146,8 +138,9 @@ const BudgetListScreen = () => {
     };
 
     fetchItems();
+    fetchTotalBudget();
     fetchUserRole();
-  }, []);
+  }, [dorm]);
 
   const handleAmountChange = async (id, amount) => {
     const newItems = items.map((item) =>
@@ -166,11 +159,11 @@ const BudgetListScreen = () => {
   };
 
   const handleAddItemSubmit = async (item) => {
-    const newItem = { id: itemId, ...item };
+    const newItem = { id: itemId, ...item, dorm };
     setItems([...items, newItem]);
     setItemId(itemId + 1);
 
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('budget_items')
       .insert([newItem]);
 
@@ -193,10 +186,21 @@ const BudgetListScreen = () => {
     }
   };
 
-  const handleEditBudgetSubmit = (newBudget) => {
+  const handleEditBudgetSubmit = async (newBudget) => {
     setTotalBudget(newBudget);
     setModalVisible(false);
+  
+    const { error } = await supabase
+      .from('profiles')
+      .update({ total_budget: newBudget })
+      .eq('dorm', dorm);
+  
+    if (error) {
+      console.error('Error updating total budget in Supabase:', error);
+    }
   };
+  
+  
 
   const calculateRemainingBudget = () => {
     const totalSpent = items.reduce((acc, item) => acc + item.amount, 0);
@@ -303,22 +307,22 @@ const styles = StyleSheet.create({
   modalText: {
     marginBottom: 15,
     textAlign: 'center',
-    fontSize: 18
+    fontSize: 18,
   },
   deleteButton: {
     padding: 5,
     backgroundColor: '#ff4d4d',
     borderRadius: 5,
-    marginLeft: 10
+    marginLeft: 10,
   },
   centeredView: {
     flex: 1,
-    justifyContent: 'flex-start', 
+    justifyContent: 'flex-start',
     alignItems: 'center',
   },
   modalView: {
-    marginTop: 50, 
-    width: '90%', 
+    marginTop: 50,
+    width: '90%',
     backgroundColor: 'white',
     borderRadius: 20,
     padding: 35,
@@ -326,18 +330,19 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 2
+      height: 2,
     },
     shadowOpacity: 0.25,
     shadowRadius: 4,
-    elevation: 5
+    elevation: 5,
   },
   modalInput: {
     width: 200,
     height: 40,
     marginBottom: 20,
     borderWidth: 1,
-    padding: 10
+    padding: 10,
   },
 });
+
 export default BudgetListScreen;

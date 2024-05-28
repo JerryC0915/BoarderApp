@@ -7,9 +7,9 @@ import {
   StyleSheet,
   TextInput,
   Modal,
-  Button
+  Button,
 } from 'react-native';
-import { supabase } from "../lib/supabase.js"
+import { supabase } from '../lib/supabase.js';
 
 const DormJob = ({ id, name, assignedTo, onDelete, userRole }) => {
   return (
@@ -62,21 +62,22 @@ const AddJobModal = ({ visible, onClose, onSubmit }) => {
   );
 };
 
-const DormJobsScreen = () => {
+const DormJobsListScreen = ({ route }) => {
+  const { dorm } = route.params;
   const [dormJobs, setDormJobs] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [userRole, setUserRole] = useState('');
 
-  useEffect(() => {
-    const fetchJobs = async () => {
-      const { data, error } = await supabase.from('dorm_jobs').select('*');
-      if (error) {
-        console.error('Error fetching dorm jobs:', error);
-      } else {
-        setDormJobs(data);
-      }
-    };
+  const fetchJobs = async () => {
+    const { data, error } = await supabase.from('dorm_jobs').select('*').eq('dorm', dorm);
+    if (error) {
+      console.error('Error fetching dorm jobs:', error);
+    } else {
+      setDormJobs(data || []);
+    }
+  };
 
+  useEffect(() => {
     const fetchUserRole = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
@@ -90,48 +91,28 @@ const DormJobsScreen = () => {
         } else {
           setUserRole(data.role);
         }
-      } else {
-        console.error('No user found.');
       }
     };
 
     fetchJobs();
     fetchUserRole();
-
-    const subscription = supabase
-      .channel('public:dorm_jobs')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'dorm_jobs' }, (payload) => {
-        fetchJobs();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(subscription);
-    };
-  }, []);
+  }, [dorm]);
 
   const handleAddJobSubmit = async (job) => {
-    const { data, error } = await supabase.from('dorm_jobs').insert([{ name: job.name, assignedTo: job.assignedTo }]);
+    const { data, error } = await supabase.from('dorm_jobs').insert([{ name: job.name, assignedTo: job.assignedTo, dorm }]);
     if (error) {
-      console.error('Error adding dorm job:', error);
-    } else if (data && data.length > 0) {
-      const newJob = {
-        id: data[0].id,
-        name: data[0].name,
-        assignedTo: data[0].assignedTo
-      };
-      setDormJobs(currentJobs => [...currentJobs, newJob]);
+      console.error('Error adding dorm job:', error.message);
+    } else {
+      fetchJobs(); // Refetch items to ensure the new job is displayed
     }
   };
 
   const handleDeleteJob = async (id) => {
-    console.log(`Attempting to delete dorm job with ID: ${id}`);
-    const { data, error } = await supabase.from('dorm_jobs').delete().eq('id', id);
+    const { error } = await supabase.from('dorm_jobs').delete().eq('id', id);
     if (error) {
       console.error(`Error deleting dorm job with ID ${id}:`, error);
     } else {
-      console.log(`Dorm job deleted from Supabase: ${id}`, data);
-      setDormJobs(currentJobs => currentJobs.filter(job => job.id !== id));
+      fetchJobs(); // Refetch items to ensure the deleted job is removed
     }
   };
 
@@ -155,11 +136,7 @@ const DormJobsScreen = () => {
           <Text style={styles.addButtonText}>+</Text>
         </TouchableOpacity>
       )}
-      <AddJobModal
-        visible={modalVisible}
-        onClose={() => setModalVisible(false)}
-        onSubmit={handleAddJobSubmit}
-      />
+      <AddJobModal visible={modalVisible} onClose={() => setModalVisible(false)} onSubmit={handleAddJobSubmit} />
     </View>
   );
 };
@@ -248,4 +225,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default DormJobsScreen;
+export default DormJobsListScreen;

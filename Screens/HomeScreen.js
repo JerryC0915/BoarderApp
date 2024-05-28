@@ -1,18 +1,42 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image } from 'react-native';
-import { supabase } from "../lib/supabase.js"
+import { supabase } from "../lib/supabase.js";
 
 const HomeScreen = ({ navigation }) => {
+  const [userRole, setUserRole] = useState('');
+  const [selectedDorm, setSelectedDorm] = useState('');
+
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('role, dorm')
+          .eq('id', user.id)
+          .single();
+        if (error) {
+          console.error('Error fetching user role:', error);
+        } else {
+          setUserRole(data.role);
+          setSelectedDorm(data.dorm); 
+        }
+      }
+    };
+
+    fetchUserRole();
+  }, []);
+
   const handleBudgetPress = () => {
-    navigation.navigate("BudgetList");
+    navigation.navigate("BudgetList", { dorm: selectedDorm });
   };
 
   const handleDormJobsPress = () => {
-    navigation.navigate("DormJobsList");
+    navigation.navigate("DormJobsList", { dorm: selectedDorm });
   };
 
-  const handleDutyPersonPress = () => {
-    navigation.navigate("DutyPerson");
+  const handleCalenderPress = () => {
+    navigation.navigate("Calender");
   };
 
   const handleSignOutPress = async () => {
@@ -25,6 +49,10 @@ const HomeScreen = ({ navigation }) => {
     } else {
       console.error('Sign out error: ', error.message);
     }
+  };
+
+  const handleDormSwitch = (dorm) => {
+    setSelectedDorm(dorm);
   };
 
   return (
@@ -56,13 +84,27 @@ const HomeScreen = ({ navigation }) => {
             style={styles.ButtonPic}
           />
         </TouchableOpacity>
-        <TouchableOpacity onPress={handleDutyPersonPress} style={styles.buttonSection}>
-          <Text style={styles.sectionTitle}>DutyPerson:</Text>
+        <TouchableOpacity onPress={handleCalenderPress} style={styles.buttonSection}>
+          <Text style={styles.sectionTitle}>Calender:</Text>
           <Image
-            source={{ uri: 'https://images.vexels.com/media/users/3/136808/isolated/preview/d3455a22af5f3ed7565fb5fb71bb8d43-send-message-icon.png' }}
+            source={{ uri: 'https://www.freeiconspng.com/thumbs/calendar-icon-png/calendar-date-event-month-icon--19.png' }}
             style={styles.ButtonPic}
           />
         </TouchableOpacity>
+        {userRole === 'admin' && (
+          <View style={styles.adminControls}>
+            <Text>Switch Dorm:</Text>
+            <TouchableOpacity onPress={() => handleDormSwitch('Creekside')} style={styles.switchButton}>
+              <Text>Creekside</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => handleDormSwitch('Appletree')} style={styles.switchButton}>
+              <Text>Appletree</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => handleDormSwitch('Ridgeview')} style={styles.switchButton}>
+              <Text>Ridgeview</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </ScrollView>
     </View>
   );
@@ -89,7 +131,6 @@ const styles = StyleSheet.create({
   ButtonPic: {
     width: 70,
     height: 70,
-    borderRadius: 25,
     marginTop: 10,
     marginLeft: 10,
   },
@@ -120,6 +161,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+  adminControls: {
+    marginTop: 20,
+    padding: 10,
+    backgroundColor: '#f8f8f8',
+    borderRadius: 5,
+  },
+  switchButton: {
+    padding: 10,
+    backgroundColor: '#ddd',
+    borderRadius: 5,
+    marginTop: 5,
+    alignItems: 'center',
+  }
 });
 
 export default HomeScreen;
