@@ -8,36 +8,66 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { supabase } from "../lib/supabase.js";
-import { Picker } from '@react-native-picker/picker'; // Import from the new package
+import { Picker } from '@react-native-picker/picker'; 
+import { CommonActions } from '@react-navigation/native';
 
 const SignInScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [dorm, setDorm] = useState('Creekside'); // Default to Creekside
-  const [isSigningUp, setIsSigningUp] = useState(false); // Track if user is signing up
+  const [dorm, setDorm] = useState('Creekside');
+  const [isSigningUp, setIsSigningUp] = useState(false); 
 
   const handleSignUp = async () => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { dorm }
-      }
-    });
+    try {
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+      });
 
-    if (error) {
-      console.error('Error signing up:', error.message);
-    } else {
-      navigation.navigate('HomeScreen');
+      if (signUpError) {
+        console.error('Error signing up:', signUpError.message);
+        return;
+      }
+
+      const user = signUpData.user;
+      
+      if (user) {
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .insert([{ id: user.id, email, dorm, role: 'student' }]);
+
+        if (profileError) {
+          console.error('Error creating profile:', profileError.message);
+          return;
+        }
+      }
+
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: 'HomeScreen' }],
+        })
+      );
+    } catch (error) {
+      console.error('Error:', error.message);
     }
   };
 
   const handleSignIn = async () => {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      console.error('Error signing in:', error.message);
-    } else {
-      navigation.navigate('HomeScreen');
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        console.error('Error signing in:', error.message);
+      } else {
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [{ name: 'HomeScreen' }],
+          })
+        );
+      }
+    } catch (error) {
+      console.error('Error:', error.message);
     }
   };
 
@@ -86,7 +116,7 @@ const SignInScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center', // Center content vertically
+    justifyContent: 'center',
     padding: 20,
     backgroundColor: '#fff',
   },

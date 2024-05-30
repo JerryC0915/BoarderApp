@@ -42,12 +42,14 @@ const AddItemModal = ({ visible, onClose, onSubmit }) => {
         <View style={styles.modalView}>
           <TextInput
             placeholder="Item name"
+            placeholderTextColor="#888"
             style={styles.modalInput}
             value={name}
             onChangeText={setName}
           />
           <TextInput
             placeholder="Cost"
+            placeholderTextColor="#888"
             style={styles.modalInput}
             keyboardType="numeric"
             value={amount}
@@ -87,7 +89,6 @@ const BudgetListScreen = ({ route }) => {
   const { dorm } = route.params;
   const [totalBudget, setTotalBudget] = useState(1000);
   const [items, setItems] = useState([]);
-  const [itemId, setItemId] = useState(0);
   const [addItemModalVisible, setAddItemModalVisible] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [userRole, setUserRole] = useState('');
@@ -99,25 +100,22 @@ const BudgetListScreen = ({ route }) => {
         console.error('Error fetching data:', error);
       } else {
         setItems(data || []);
-        if (data.length > 0) {
-          setItemId(Math.max(...data.map(item => item.id)) + 1);
-        }
       }
     };
 
     const fetchTotalBudget = async () => {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('total_budget')
-          .eq('dorm', dorm)
-          .single();
-        
-        if (error) {
-          console.error('Error fetching total budget:', error);
-        } else {
-          setTotalBudget(data?.total_budget || 1000);
-        }
-      };
+      const { data, error } = await supabase
+        .from('dorm_budgets')
+        .select('total_budget')
+        .eq('dorm', dorm)
+        .single();
+      
+      if (error) {
+        console.error('Error fetching total budget:', error);
+      } else {
+        setTotalBudget(data?.total_budget || 1000);
+      }
+    };
 
     const fetchUserRole = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -159,9 +157,8 @@ const BudgetListScreen = ({ route }) => {
   };
 
   const handleAddItemSubmit = async (item) => {
-    const newItem = { id: itemId, ...item, dorm };
+    const newItem = { ...item, dorm };
     setItems([...items, newItem]);
-    setItemId(itemId + 1);
 
     const { error } = await supabase
       .from('budget_items')
@@ -191,7 +188,7 @@ const BudgetListScreen = ({ route }) => {
     setModalVisible(false);
   
     const { error } = await supabase
-      .from('profiles')
+      .from('dorm_budgets')
       .update({ total_budget: newBudget })
       .eq('dorm', dorm);
   
@@ -199,8 +196,6 @@ const BudgetListScreen = ({ route }) => {
       console.error('Error updating total budget in Supabase:', error);
     }
   };
-  
-  
 
   const calculateRemainingBudget = () => {
     const totalSpent = items.reduce((acc, item) => acc + item.amount, 0);
@@ -342,6 +337,8 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     borderWidth: 1,
     padding: 10,
+    color: '#000',
+    placeholderTextColor: '#888',
   },
 });
 

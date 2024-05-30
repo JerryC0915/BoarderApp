@@ -62,7 +62,7 @@ const HomeScreen = ({ navigation }) => {
           source={{ uri: 'https://cnas.ucr.edu/sites/default/files/styles/form_preview/public/default-profile.jpg?itok=UCHDPglp' }}
           style={styles.profilePic}
         />
-        <Text style={styles.name}>Duty Person:</Text>
+        <Text style={styles.name}>Boarder App</Text>
         <View>
           <TouchableOpacity onPress={handleSignOutPress} style={styles.button}>
             <Text>Sign Out</Text>

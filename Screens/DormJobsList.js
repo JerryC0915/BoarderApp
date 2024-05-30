@@ -44,12 +44,14 @@ const AddJobModal = ({ visible, onClose, onSubmit }) => {
         <View style={styles.modalView}>
           <TextInput
             placeholder="Dorm Job Name"
+            placeholderTextColor="#888"
             style={styles.modalInput}
             value={jobName}
             onChangeText={setJobName}
           />
           <TextInput
             placeholder="Assigned To"
+            placeholderTextColor="#888"
             style={styles.modalInput}
             value={assignedTo}
             onChangeText={setAssignedTo}
@@ -222,6 +224,8 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     padding: 20,
     paddingRight: 75,
+    color: '#000',
+    placeholderTextColor: '#888',
   },
 });
 
