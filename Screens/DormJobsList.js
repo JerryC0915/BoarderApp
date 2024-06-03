@@ -71,28 +71,20 @@ const DormJobsListScreen = ({ route }) => {
   const [userRole, setUserRole] = useState('');
 
   const fetchJobs = async () => {
-    const { data, error } = await supabase.from('dorm_jobs').select('*').eq('dorm', dorm);
-    if (error) {
-      console.error('Error fetching dorm jobs:', error);
-    } else {
-      setDormJobs(data || []);
-    }
+    const { data } = await supabase.from('dorm_jobs').select('*').eq('dorm', dorm);
+    setDormJobs(data || []);
   };
 
   useEffect(() => {
     const fetchUserRole = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from('profiles')
           .select('role')
           .eq('id', user.id)
           .single();
-        if (error) {
-          console.error('Error fetching user role:', error);
-        } else {
-          setUserRole(data.role);
-        }
+        setUserRole(data.role);
       }
     };
 
@@ -101,21 +93,13 @@ const DormJobsListScreen = ({ route }) => {
   }, [dorm]);
 
   const handleAddJobSubmit = async (job) => {
-    const { data, error } = await supabase.from('dorm_jobs').insert([{ name: job.name, assignedTo: job.assignedTo, dorm }]);
-    if (error) {
-      console.error('Error adding dorm job:', error.message);
-    } else {
-      fetchJobs(); // Refetch items to ensure the new job is displayed
-    }
+    await supabase.from('dorm_jobs').insert([{ name: job.name, assignedTo: job.assignedTo, dorm }]);
+    fetchJobs();
   };
 
   const handleDeleteJob = async (id) => {
-    const { error } = await supabase.from('dorm_jobs').delete().eq('id', id);
-    if (error) {
-      console.error(`Error deleting dorm job with ID ${id}:`, error);
-    } else {
-      fetchJobs(); // Refetch items to ensure the deleted job is removed
-    }
+    await supabase.from('dorm_jobs').delete().eq('id', id);
+    fetchJobs();
   };
 
   return (

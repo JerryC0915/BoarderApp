@@ -18,57 +18,36 @@ const SignInScreen = ({ navigation }) => {
   const [isSigningUp, setIsSigningUp] = useState(false); 
 
   const handleSignUp = async () => {
-    try {
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-      });
+    const { data: signUpData } = await supabase.auth.signUp({
+      email,
+      password,
+    });
 
-      if (signUpError) {
-        console.error('Error signing up:', signUpError.message);
-        return;
-      }
-
-      const user = signUpData.user;
-      
-      if (user) {
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .insert([{ id: user.id, email, dorm, role: 'student' }]);
-
-        if (profileError) {
-          console.error('Error creating profile:', profileError.message);
-          return;
-        }
-      }
-
-      navigation.dispatch(
-        CommonActions.reset({
-          index: 0,
-          routes: [{ name: 'HomeScreen' }],
-        })
-      );
-    } catch (error) {
-      console.error('Error:', error.message);
+    const user = signUpData.user;
+    
+    if (user) {
+      await supabase
+        .from('profiles')
+        .insert([{ id: user.id, email, dorm, role: 'student' }]);
     }
+
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{ name: 'HomeScreen' }],
+      })
+    );
   };
 
   const handleSignIn = async () => {
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) {
-        console.error('Error signing in:', error.message);
-      } else {
-        navigation.dispatch(
-          CommonActions.reset({
-            index: 0,
-            routes: [{ name: 'HomeScreen' }],
-          })
-        );
-      }
-    } catch (error) {
-      console.error('Error:', error.message);
-    }
+    const { data } = await supabase.auth.signInWithPassword({ email, password });
+
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{ name: 'HomeScreen' }],
+      })
+    );
   };
 
   return (

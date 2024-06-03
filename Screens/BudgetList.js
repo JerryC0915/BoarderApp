@@ -95,43 +95,28 @@ const BudgetListScreen = ({ route }) => {
 
   useEffect(() => {
     const fetchItems = async () => {
-      const { data, error } = await supabase.from('budget_items').select('*').eq('dorm', dorm);
-      if (error) {
-        console.error('Error fetching data:', error);
-      } else {
-        setItems(data || []);
-      }
+      const { data } = await supabase.from('budget_items').select('*').eq('dorm', dorm);
+      setItems(data || []);
     };
 
     const fetchTotalBudget = async () => {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('dorm_budgets')
         .select('total_budget')
         .eq('dorm', dorm)
         .single();
-      
-      if (error) {
-        console.error('Error fetching total budget:', error);
-      } else {
-        setTotalBudget(data?.total_budget || 1000);
-      }
+      setTotalBudget(data?.total_budget || 1000);
     };
 
     const fetchUserRole = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from('profiles')
           .select('role')
           .eq('id', user.id)
           .single();
-        if (error) {
-          console.error('Error fetching user role:', error);
-        } else {
-          setUserRole(data.role);
-        }
-      } else {
-        console.error('No user found.');
+        setUserRole(data.role);
       }
     };
 
@@ -146,55 +131,39 @@ const BudgetListScreen = ({ route }) => {
     );
     setItems(newItems);
 
-    const { error } = await supabase
+    await supabase
       .from('budget_items')
       .update({ amount: amount })
       .match({ id });
-
-    if (error) {
-      console.error('Error updating data in Supabase:', error);
-    }
   };
 
   const handleAddItemSubmit = async (item) => {
     const newItem = { ...item, dorm };
     setItems([...items, newItem]);
 
-    const { error } = await supabase
+    await supabase
       .from('budget_items')
       .insert([newItem]);
-
-    if (error) {
-      console.error('Error uploading data to Supabase:', error);
-    }
   };
 
   const handleDeleteItem = async (id) => {
     const newItems = items.filter(item => item.id !== id);
     setItems(newItems);
 
-    const { error } = await supabase
+    await supabase
       .from('budget_items')
       .delete()
       .match({ id });
-
-    if (error) {
-      console.error('Error deleting data from Supabase:', error);
-    }
   };
 
   const handleEditBudgetSubmit = async (newBudget) => {
     setTotalBudget(newBudget);
     setModalVisible(false);
-  
-    const { error } = await supabase
+
+    await supabase
       .from('dorm_budgets')
       .update({ total_budget: newBudget })
       .eq('dorm', dorm);
-  
-    if (error) {
-      console.error('Error updating total budget in Supabase:', error);
-    }
   };
 
   const calculateRemainingBudget = () => {

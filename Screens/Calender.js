@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Modal, TextInput, Button, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, Modal, TextInput, Button, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import { Swipeable, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { supabase } from '../lib/supabase.js';
@@ -41,41 +41,31 @@ const CalendarScreen = ({ navigation }) => {
   const fetchEvents = async () => {
     const month = currentDate.getMonth() + 1;
     const year = currentDate.getFullYear();
-    const { data, error } = await supabase.from('events').select('*').like('date', `${year}-${month.toString().padStart(2, '0')}-%`);
-    if (error) {
-      console.error('Error fetching events:', error);
-    } else {
-      const formattedEvents = {};
-      data.forEach(event => {
-        if (!formattedEvents[event.date]) {
-          formattedEvents[event.date] = [];
-        }
-        formattedEvents[event.date].push({
-          id: event.id,
-          name: event.title,
-          startTime: event.start_time,
-          endTime: event.end_time
-        });
+    const { data } = await supabase.from('events').select('*').like('date', `${year}-${month.toString().padStart(2, '0')}-%`);
+    const formattedEvents = {};
+    data.forEach(event => {
+      if (!formattedEvents[event.date]) {
+        formattedEvents[event.date] = [];
+      }
+      formattedEvents[event.date].push({
+        id: event.id,
+        name: event.title,
+        startTime: event.start_time,
+        endTime: event.end_time
       });
-      setEvents(formattedEvents);
-    }
+    });
+    setEvents(formattedEvents);
   };
 
   const fetchUserRole = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('profiles')
         .select('role')
         .eq('id', user.id)
         .single();
-      if (error) {
-        console.error('Error fetching user role:', error);
-      } else {
-        setUserRole(data.role);
-      }
-    } else {
-      console.error('No user found.');
+      setUserRole(data.role);
     }
   };
 
@@ -94,25 +84,17 @@ const CalendarScreen = ({ navigation }) => {
       end_time: endTime
     };
 
-    const { data, error } = await supabase.from('events').insert([newEvent]);
-    if (error) {
-      console.error('Error saving event:', error);
-    } else {
-      setModalVisible(false);
-      setEventTitle('');
-      setStartTime('');
-      setEndTime('');
-      fetchEvents();
-    }
+    await supabase.from('events').insert([newEvent]);
+    setModalVisible(false);
+    setEventTitle('');
+    setStartTime('');
+    setEndTime('');
+    fetchEvents();
   };
 
   const handleDeleteEvent = async (id) => {
-    const { data, error } = await supabase.from('events').delete().eq('id', id);
-    if (error) {
-      console.error('Error deleting event:', error);
-    } else {
-      fetchEvents(); 
-    }
+    await supabase.from('events').delete().eq('id', id);
+    fetchEvents(); 
   };
 
   const renderRightActions = (progress, dragX, id) => {
