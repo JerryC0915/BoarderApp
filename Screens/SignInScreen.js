@@ -21,6 +21,11 @@ const SignInScreen = ({ navigation }) => {
     const { data: signUpData } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        data: {
+          dorm
+        }
+      }
     });
 
     const user = signUpData.user;

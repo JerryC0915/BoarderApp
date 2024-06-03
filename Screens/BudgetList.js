@@ -2,26 +2,24 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, Modal, Button } from 'react-native';
 import { supabase } from "../lib/supabase.js";
 
-const BudgetList = ({ id, name, amount, onAmountChange, onDelete, userRole }) => {
-  return (
-    <View style={styles.budgetList}>
-      <Text>{name}</Text>
-      {userRole === 'admin' && (
-        <TextInput
-          style={styles.input}
-          keyboardType="numeric"
-          value={amount.toString()}
-          onChangeText={(value) => onAmountChange(id, parseFloat(value))}
-        />
-      )}
-      {userRole === 'admin' && (
-        <TouchableOpacity onPress={() => onDelete(id)} style={styles.deleteButton}>
-          <Text>Delete</Text>
-        </TouchableOpacity>
-      )}
-    </View>
-  );
-};
+const BudgetList = ({ id, name, amount, onAmountChange, onDelete, userRole }) => (
+  <View style={styles.budgetList}>
+    <Text>{name}</Text>
+    {userRole === 'admin' && (
+      <TextInput
+        style={styles.input}
+        keyboardType="numeric"
+        value={amount.toString()}
+        onChangeText={(value) => onAmountChange(id, parseFloat(value))}
+      />
+    )}
+    {userRole === 'admin' && (
+      <TouchableOpacity onPress={() => onDelete(id)} style={styles.deleteButton}>
+        <Text>Delete</Text>
+      </TouchableOpacity>
+    )}
+  </View>
+);
 
 const AddItemModal = ({ visible, onClose, onSubmit }) => {
   const [name, setName] = useState('');

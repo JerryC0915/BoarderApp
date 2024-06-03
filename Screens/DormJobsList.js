@@ -1,29 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
-  TextInput,
-  Modal,
-  Button,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, Modal, Button } from 'react-native';
 import { supabase } from '../lib/supabase.js';
 
-const DormJob = ({ id, name, assignedTo, onDelete, userRole }) => {
-  return (
-    <View style={styles.jobItem}>
-      <Text style={styles.jobName}>{name}</Text>
-      <Text style={styles.jobAssignedTo}>Assigned to: {assignedTo}</Text>
-      {userRole === 'admin' && (
-        <TouchableOpacity onPress={() => onDelete(id)} style={styles.deleteButton}>
-          <Text>Delete</Text>
-        </TouchableOpacity>
-      )}
-    </View>
-  );
-};
+const DormJob = ({ id, name, assignedTo, onDelete, userRole }) => (
+  <View style={styles.jobItem}>
+    <Text style={styles.jobName}>{name}</Text>
+    <Text style={styles.jobAssignedTo}>Assigned to: {assignedTo}</Text>
+    {userRole === 'admin' && (
+      <TouchableOpacity onPress={() => onDelete(id)} style={styles.deleteButton}>
+        <Text>Delete</Text>
+      </TouchableOpacity>
+    )}
+  </View>
+);
 
 const AddJobModal = ({ visible, onClose, onSubmit }) => {
   const [jobName, setJobName] = useState('');
@@ -70,12 +59,12 @@ const DormJobsListScreen = ({ route }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [userRole, setUserRole] = useState('');
 
-  const fetchJobs = async () => {
-    const { data } = await supabase.from('dorm_jobs').select('*').eq('dorm', dorm);
-    setDormJobs(data || []);
-  };
-
   useEffect(() => {
+    const fetchJobs = async () => {
+      const { data } = await supabase.from('dorm_jobs').select('*').eq('dorm', dorm);
+      setDormJobs(data || []);
+    };
+
     const fetchUserRole = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
