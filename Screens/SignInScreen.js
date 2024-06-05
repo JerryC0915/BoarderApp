@@ -18,7 +18,7 @@ const SignInScreen = ({ navigation }) => {
   const [isSigningUp, setIsSigningUp] = useState(false); 
 
   const handleSignUp = async () => {
-    const { data: signUpData } = await supabase.auth.signUp({
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -28,8 +28,13 @@ const SignInScreen = ({ navigation }) => {
       }
     });
 
+    if (signUpError) {
+      console.error('Error signing up:', signUpError.message);
+      return;
+    }
+
     const user = signUpData.user;
-    
+
     if (user) {
       await supabase
         .from('profiles')
@@ -45,7 +50,12 @@ const SignInScreen = ({ navigation }) => {
   };
 
   const handleSignIn = async () => {
-    const { data } = await supabase.auth.signInWithPassword({ email, password });
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+
+    if (signInError) {
+      console.error('Error signing in:', signInError.message);
+      return;
+    }
 
     navigation.dispatch(
       CommonActions.reset({

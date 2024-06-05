@@ -8,19 +8,32 @@ const HomeScreen = ({ navigation }) => {
 
   useEffect(() => {
     const fetchUserRole = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('role, dorm')
-          .eq('id', user.id)
-          .single();
-        if (error) {
-          console.error('Error fetching user role:', error);
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) {
+        console.error('Error fetching session:', error.message);
+        return;
+      }
+      if (session) {
+        const user = session.user;
+        console.log('Fetched user:', user);
+        if (user) {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('role, dorm')
+            .eq('id', user.id)
+            .single();
+          if (error) {
+            console.error('Error fetching user role:', error.message);
+          } else {
+            console.log('Fetched user role and dorm:', data.role, data.dorm);
+            setUserRole(data.role);
+            setSelectedDorm(data.dorm); 
+          }
         } else {
-          setUserRole(data.role);
-          setSelectedDorm(data.dorm); 
+          console.error('No authenticated user found');
         }
+      } else {
+        console.error('No active session found');
       }
     };
 
@@ -28,10 +41,12 @@ const HomeScreen = ({ navigation }) => {
   }, []);
 
   const handleBudgetPress = () => {
+    console.log('Navigating to BudgetList with dorm:', selectedDorm);
     navigation.navigate("BudgetList", { dorm: selectedDorm });
   };
 
   const handleDormJobsPress = () => {
+    console.log('Navigating to DormJobsList with dorm:', selectedDorm);
     navigation.navigate("DormJobsList", { dorm: selectedDorm });
   };
 
@@ -42,6 +57,7 @@ const HomeScreen = ({ navigation }) => {
   const handleSignOutPress = async () => {
     const { error } = await supabase.auth.signOut();
     if (!error) {
+      console.log('Signed out successfully');
       navigation.reset({
         index: 0,
         routes: [{ name: "SignInScreen" }],
@@ -52,6 +68,7 @@ const HomeScreen = ({ navigation }) => {
   };
 
   const handleDormSwitch = (dorm) => {
+    console.log('Switching dorm to:', dorm);
     setSelectedDorm(dorm);
   };
 
@@ -85,7 +102,7 @@ const HomeScreen = ({ navigation }) => {
           />
         </TouchableOpacity>
         <TouchableOpacity onPress={handleCalenderPress} style={styles.buttonSection}>
-          <Text style={styles.sectionTitle}>Calender:</Text>
+          <Text style={styles.sectionTitle}>Calendar:</Text>
           <Image
             source={{ uri: 'https://www.freeiconspng.com/thumbs/calendar-icon-png/calendar-date-event-month-icon--19.png' }}
             style={styles.ButtonPic}
